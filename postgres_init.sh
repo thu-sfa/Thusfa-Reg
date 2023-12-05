@@ -1,0 +1,29 @@
+#! /bin/bash
+
+set -e
+
+# get DB_PASSWORD from DB_PASSWORD_FILE
+DB_PASSWORD=$(cat "$DB_PASSWORD_FILE")
+export DB_PASSWORD
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
+    CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';
+    CREATE DATABASE $DB_NAME;
+    GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;
+EOSQL
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$DB_NAME" <<-EOSQL
+    GRANT ALL PRIVILEGES ON SCHEMA public TO $DB_USER;
+EOSQL
+
+psql -v ON_ERROR_STOP=1 --username "$DB_USER" --dbname "$DB_NAME" <<-EOSQL
+    CREATE TABLE IF NOT EXISTS $DB_NAME.public.users (
+        thuid VARCHAR(10) PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        phone VARCHAR(255) NOT NULL,
+        department VARCHAR(255) NOT NULL,
+        qq VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP Without Time Zone NOT NULL DEFAULT (NOW() AT TIME ZONE 'Asia/Shanghai')
+    );
+EOSQL

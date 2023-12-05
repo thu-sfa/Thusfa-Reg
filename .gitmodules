@@ -1,0 +1,6 @@
+[submodule "thusfa-auth-server"]
+	path = thusfa-auth-server
+	url = ./thusfa-auth-server/
+[submodule "thusfa-reg"]
+	path = thusfa-reg
+	url = ./thusfa-reg/

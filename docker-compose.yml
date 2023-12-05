@@ -1,0 +1,86 @@
+﻿version: '2.0'
+services:
+  nginx:
+    image: thusfa-nginx:1
+    container_name: thusfa_nginx
+    ports:
+      - "2555:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./qrcode.jpg:/usr/share/nginx/html/qrcode.jpg:ro
+    restart: always
+    depends_on:
+      - server
+
+  db:
+    image: postgres:latest
+    container_name: thusfa_db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
+      - DB_USER=server
+      - DB_PASSWORD_FILE=/run/secrets/db_user_password
+      - DB_NAME=thusfa
+    volumes:
+      - ./db:/var/lib/postgresql/data
+      - ./postgres_init.sh:/docker-entrypoint-initdb.d/postgres_init.sh
+    secrets:
+      - db_password
+      - db_user_password
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "server", "-d", "thusfa"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  server:
+    image: thusfa-server:1
+    container_name: thusfa_server
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./config:/opt/config:ro
+      - ./allow_headers:/opt/allow_headers:ro
+      - ./logs:/logs
+    environment:
+      - DATABASE_HOST=thusfa_db
+      - DATABASE_PORT=5432
+      - DATABASE_USER=server
+      - DATABASE_PASSWORD_FILE=/run/secrets/db_user_password
+      - DATABASE_DATABASE=thusfa
+      - GITLAB_APP_ID=b37cbd057df35723254cf2b99d491813d8ac98ef8d070d01c9a8118af0004a96
+      - GITLAB_APP_SECRET=ca40b53e8fffde81e80bf06ab0ede43975d66f0c8aa06437e3a501c5c03f11c1
+      - GITLAB_REDIRECT_URI=https://reg.thusfa.club/oauth/redirect
+      - GITLAB_REDIRECT_URI_ADMIN=https://reg.thusfa.club/admin/redirect
+      - LOCAL_ADMIN_FILE=/opt/config/admin.txt
+      - LOG_DIR=/logs
+    secrets:
+      - db_user_password
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      - db
+    restart: unless-stopped
+    networks:
+      - default
+      - ip6net
+  
+# configure ipv6
+networks:
+  default:
+  ip6net:
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: 2001:db8:1::/64
+
+secrets:
+  db_password:
+    file: ./db_password
+  db_user_password:
+    file: ./db_user_password
