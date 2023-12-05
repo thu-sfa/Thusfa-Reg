@@ -1,6 +1,6 @@
 [submodule "thusfa-auth-server"]
 	path = thusfa-auth-server
-	url = ./thusfa-auth-server/
+	url = git@git.tsinghua.edu.cn:hck21/Thusfa-Reg-Server.git
 [submodule "thusfa-reg"]
 	path = thusfa-reg
-	url = ./thusfa-reg/
+        url = git@git.tsinghua.edu.cn:hck21/Thusfa-Reg-Site.git
